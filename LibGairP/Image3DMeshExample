@@ -1,0 +1,200 @@
+//
+//  main.cpp
+//  SimpleWindow
+//
+//  Created by Silencer on 10/31/13.
+//  Copyright (c) 2013 0Silencer. All rights reserved.
+//
+
+#include <iostream>
+
+#ifdef MacOSX
+	#include "LibGairP.h"
+#else
+	#include "LibGairP\LibGairP.h"
+#endif
+
+vector<Light> lightSources;
+
+double currad = AngleToRadian(90), radius = 9;
+Vector3D cameraVector;
+
+Image3DMesh imageMesh;
+
+bool lightEnabled = true;
+
+int matType = 0;
+int curLightModel = 0;
+
+void init () {
+    glClearColor(1, 1, 1, 1);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_SMOOTH);
+    glShadeModel(GL_SMOOTH);
+    glEnable(GL_NORMALIZE);
+    if (lightEnabled)
+        glEnable(GL_LIGHTING);
+}
+
+void reshape(int w, int h) {
+    glViewport (0, 0, (GLsizei) w, (GLsizei) h);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(60,w/h,1,500);
+    
+    gluLookAt(cameraVector.x(), cameraVector.y() , cameraVector.z(), 0.0, 0.0, 0.0, 0.0, 1.0, 0.0 );
+    
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+}
+
+void redraw() {
+    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glPushMatrix();
+    
+    forinc(i, 0, lightSources.size()-1)
+    lightSources[i].updateLight();
+    
+    if (lightEnabled) {
+        imageMesh.draw();
+    }
+    else {
+        imageMesh.drawWithLightSources((LightingModels)curLightModel, lightSources, cameraVector);
+    }
+    
+    glPopMatrix();
+    glutSwapBuffers();
+}
+
+void updateDisplay() {
+    reshape(800, 800);
+    redraw();
+}
+
+void createObjects () {
+    cameraVector = Vector3D(cos(currad) * radius,
+                            0,
+                            sin(currad) * radius);
+    
+    Vector4D ambient = Vector4D(0.2, 0.14, 0.39, 1.0);
+    Vector4D diffuse = Vector4D(0.6, 0.6, 0.6, 1.0 );
+    Vector4D specular = Vector4D(0.5, 0.7, 0.3, 1.0 );
+    
+    Light light = Light(Material(ambient,diffuse,specular,0.0),Vector3D(0,0,1));
+    light.enabled = lightEnabled;
+    
+    lightSources.push_back(light);
+    
+    //imageMesh = Image3DMesh("s1.png");
+    imageMesh = Image3DMesh("s1.jpg");
+}
+
+void handleKeyPress(unsigned char c, int x, int y) {
+    if (c == 'a') {
+        imageMesh.rotate(0., 0, AngleToRadian(5));
+    }
+    if (c == 's') {
+        imageMesh.rotate(0., 0, AngleToRadian(-5));
+    }
+    if (c == 'd') {
+        imageMesh.rotate(AngleToRadian(5), 0, 0);
+    }
+    if (c == 'f') {
+        imageMesh.rotate(AngleToRadian(-5), 0, 0);
+    }
+    if (c == 'z') {
+        currad -= AngleToRadian(5);
+        cameraVector.x() = cos(currad) * radius;
+        cameraVector.z() = sin(currad) * radius;
+        updateDisplay();
+    }
+    if (c == 'x') {
+        currad += AngleToRadian(5);
+        cameraVector.x() = cos(currad) * radius;
+        cameraVector.z() = sin(currad) * radius;
+        updateDisplay();
+    }
+    if (c == 'c') {
+        cameraVector.y() += 0.2;
+        updateDisplay();
+    }
+    if (c == 'v') {
+        cameraVector.y() -= 0.2;
+        updateDisplay();
+    }
+    if (c == 'b') {
+        radius += 0.2;
+        cameraVector.x() = cos(currad) * radius;
+        cameraVector.z() = sin(currad) * radius;
+        updateDisplay();
+    }
+    if (c == 'n') {
+        radius -= 0.2;
+        cameraVector.x() = cos(currad) * radius;
+        cameraVector.z() = sin(currad) * radius;
+        updateDisplay();
+    }
+    if (c == 'm') {
+        imageMesh.material = Material((MaterialTypes)(++matType % (MaterialTypePewter + 1)));
+    }
+    if (c == 'g') {
+        curLightModel = ++curLightModel % (LightingModelBlinPhong + 1);
+    }
+
+    if (c == 'l') {
+        lightEnabled = !lightEnabled;
+        if (lightEnabled) {
+            glEnable(GL_LIGHTING);
+        }
+        else {
+            glDisable(GL_LIGHTING);
+        }
+        forinc(i, 0, lightSources.size()-1)
+        lightSources[i].enabled = lightEnabled;
+    }
+    
+    if (c == 'u') {
+        lightSources[0].position.x() += 0.1;
+    }
+    
+    if (c == 'i') {
+        lightSources[0].position.x() -= 0.1;
+    }
+    
+    if (c == 'o') {
+        lightSources[0].position.y() += 0.1;
+    }
+    
+    if (c == 'p') {
+        lightSources[0].position.y() -= 0.1;
+    }
+    if (c == 't') {
+        lightSources[0].position.z() += 1;
+    }
+    
+    if (c == 'y') {
+        lightSources[0].position.z() -= 1;
+    }
+    if (c == 27)
+        exit(0);
+}
+
+int main(int argc, char * argv[]) {
+    createObjects();
+    
+    glutInit(&argc, argv);
+    glutInitDisplayMode (GLUT_DOUBLE | GLUT_DEPTH);
+    glutInitWindowSize(800, 800);
+    glutInitWindowPosition(400, 400);
+    glutCreateWindow("Image 3D Mesh Example");
+    
+    init();
+    glutDisplayFunc(redraw);
+    glutReshapeFunc(reshape);
+    glutKeyboardFunc(handleKeyPress);
+    glutIdleFunc(redraw);
+    glutMainLoop();
+    
+    return 0;
+}
+
