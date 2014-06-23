@@ -1,5 +1,8 @@
 LibGairp
 ========
+RobotArm Video Demo:
+
+https://www.youtube.com/watch?v=5DmS0AdRDp8
 
 CPU RayTracer
 
@@ -11,6 +14,3 @@ CPU RayTracer
 ![alt tag](http://i.imgur.com/dtvtooD.png)
 
 
-RobotArm Video Demo:
-
-https://www.youtube.com/watch?v=HBCVAiKTLiI
